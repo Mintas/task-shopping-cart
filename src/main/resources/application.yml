@@ -1,0 +1,41 @@
+spring:
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQL10Dialect
+    hibernate:
+        ddl-auto: validate
+  liquibase:
+    url: ${shopping.db.url}
+    user: ${shopping.db.username}
+    password: ${shopping.db.password}
+  datasource:
+    url: ${shopping.db.url}
+    username: ${shopping.db.username}
+    password: ${shopping.db.password}
+  web:
+    resources:
+      add-mappings: false
+  mvc:
+    throw-exception-if-no-handler-found: true
+  security:
+#    user:
+#      name: user
+#      password: user
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: 61683032931-1gnrvhh78joou76lof8ftf52doardo75.apps.googleusercontent.com
+            client-secret: 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
+
+shopping:
+  db:
+    url: jdbc:postgresql://localhost:5432/shopping
+    username: postgres
+    password: postgres
+  cart:
+    expiration:
+      ttl: 20m
+      routine-delay: 5m
+  orders:
+    topic: order-carts
+

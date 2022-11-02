@@ -1,0 +1,216 @@
+openapi: 3.0.2
+info:
+  title: ShoppingCartApi Definition
+  description: ShoppingCart dev task API
+  version: v0
+servers:
+  - url: '{scheme}://{domain}:{port}/v0'
+    description: API address.
+    variables:
+      scheme:
+        default: https
+        description: URL scheme of the API.
+      domain:
+        default: localhost
+        description: API domain.
+      port:
+        default: '443'
+        description: API port.
+paths:
+  /book/list:
+    get:
+      summary: BOOK_LIST_REQUEST
+      description: Получение спика доступных книг
+      operationId: listBooks
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductListDto'
+  /book/create:
+    post:
+      summary: BOOK_CREATE_REQUEST
+      description: Создание новой книги
+      operationId: createBook
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBookRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponseDto'
+
+
+  /cart/fetch:
+    get:
+      summary: CART_FETCH_REQUEST
+      description: Получение информации о корзине
+      operationId: fetchCart
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponseDto'
+  /cart/add:
+    post:
+      summary: CART_ADD_ITEM_REQUEST
+      description: Добавление товара в корзину
+      operationId: addItemToCart
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddItemRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponseDto'
+  /cart/remove:
+    post:
+      summary: CART_REMOVE_ITEM_REQUEST
+      description: Удаление товара из корзины
+      operationId: removeItemFromCart
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemoveItemRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponseDto'
+  /cart/item/quantity:
+    put:
+      summary: CART_CHANGE_ITEM_QUANTITY
+      description: Изменение количества товара в корзине
+      operationId: changeItemQuantity
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeQuantityRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemResponseDto'
+  /cart/order:
+    get:
+      summary: CART_ORDER_REQUEST
+      description: Подтверждение корзины для перехода к заказу.
+      operationId: orderCart
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponseDto'
+components:
+  schemas:
+    CartResponseDto:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemResponseDto'
+        cartState:
+          type: string
+    ItemResponseDto:
+      type: object
+      properties:
+        product:
+          $ref: '#/components/schemas/ProductResponseDto'
+        quantity:
+          type: integer
+        deleted:
+          type: boolean
+    ProductResponseDto:
+      type: object
+      properties:
+        id:
+          format: uuid
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        availableQuantity:
+          type: integer
+    ProductListDto:
+      required:
+        - books
+      type: object
+      properties:
+        books:
+          description: List of engine regions of presence
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductResponseDto'
+
+    AddItemRequest:
+      required:
+        - productId
+        - quantity
+      type: object
+      properties:
+        productId:
+          format: uuid
+          type: string
+        quantity:
+          type: integer
+    RemoveItemRequest:
+      required:
+        - productId
+      type: object
+      properties:
+        productId:
+          format: uuid
+          type: string
+    ChangeQuantityRequest:
+      required:
+        - productId
+        - quantity
+      type: object
+      properties:
+        productId:
+          format: uuid
+          type: string
+        quantity:
+          type: integer
+    CreateBookRequest:
+      required:
+        - name
+        - description
+        - quantity
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        quantity:
+          type: integer
+

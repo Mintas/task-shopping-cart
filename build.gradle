@@ -1,0 +1,240 @@
+import java.lang.System
+import org.springframework.boot.gradle.plugin.SpringBootPlugin
+import com.diffplug.gradle.spotless.JavaExtension
+import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
+
+plugins {
+	id 'org.springframework.boot' version '2.7.5' apply false
+	id 'io.spring.dependency-management' version '1.0.15.RELEASE'
+	id 'org.asciidoctor.convert' version '1.5.8'
+	id 'java'
+	id 'io.freefair.lombok' version '6.5.1'
+	id 'com.diffplug.spotless' version '5.12.5'
+	id 'org.openapi.generator' version '5.4.0'
+	id 'com.google.cloud.tools.jib' version '3.3.1'
+	//id 'com.palantir.docker' version '0.30.0'
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	google()
+	mavenCentral()
+	gradlePluginPortal()
+	mavenLocal()
+}
+
+ext {
+	meta = [
+			buildBy: System.getProperty('user.name'),
+			createdBy: "${System.getProperty('java.version')} (${System.getProperty('java.specification.vendor')})",
+			projectGroup: 'ru.kovalev.shopping',
+			description: "Shopping Cart Project",
+			orgName: "Homemade RnD"
+	]
+	versions = [
+			javaVersion: JavaVersion.VERSION_17,
+			springBoot: '2.7.3',
+			testcontainersVersion: '1.17.4',
+			mapstructVersion: '1.5.3.Final',
+			debeziumVersion: '1.9.4.Final'
+	]
+
+	set('snippetsDir', file("build/generated-snippets"))
+	set('javaNio', "java.base/java.nio=ALL-UNNAMED")
+
+
+	cartApiGeneratedDir = "${buildDir}/generated-sources/openApi"
+	cartApiGeneratedSrcDir = "${cartApiGeneratedDir}/src/main/java"
+	cartAppGeneratedResDir = "${buildDir}/generated/resources/main"
+}
+
+configure(allprojects) {
+	group = meta.projectGroup
+	version = '0.0.1-SNAPSHOT'
+	description = meta.description
+	sourceCompatibility = versions.javaVersion
+
+	ext {
+		buildInfo = [
+				'Build-Artifact': project.name,
+				'Build-Group': project.group,
+				'Build-Name': project.description,
+				'Build-Time': new Date().format("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", TimeZone.getTimeZone('GMT')),
+				'Build-Timestamp': System.currentTimeMillis(),
+				'Build-Version': project.version,
+		]
+	}
+}
+
+dependencyManagement {
+	imports {
+		mavenBom SpringBootPlugin.BOM_COORDINATES
+		mavenBom "org.testcontainers:testcontainers-bom:${versions.testcontainersVersion}"
+	}
+}
+
+dependencies {
+	implementation "org.springframework.boot:spring-boot-starter-data-jpa"
+	implementation "org.springframework.boot:spring-boot-starter-oauth2-client"
+	implementation "org.springframework.boot:spring-boot-starter-web"
+	implementation "org.springframework.boot:spring-boot-starter-validation"
+	implementation "org.springframework.kafka:spring-kafka"
+	implementation "jakarta.validation:jakarta.validation-api"
+	implementation "org.springdoc:springdoc-openapi-ui:1.6.11"
+	implementation "org.zalando:problem-spring-web-starter:0.27.0"
+	implementation "org.mapstruct:mapstruct:${versions.mapstructVersion}"
+	runtimeOnly "org.postgresql:postgresql"
+	runtimeOnly "org.liquibase:liquibase-core"
+	annotationProcessor "org.mapstruct:mapstruct-processor:${versions.mapstructVersion}"
+	testImplementation "org.springframework.boot:spring-boot-starter-test"
+	testImplementation "org.springframework.kafka:spring-kafka-test"
+	testImplementation "org.springframework.restdocs:spring-restdocs-mockmvc"
+	testImplementation "org.testcontainers:junit-jupiter"
+	testImplementation "org.testcontainers:kafka"
+	testImplementation "org.testcontainers:postgresql"
+	testImplementation "io.debezium:debezium-core:${versions.debeziumVersion}"
+	testImplementation "io.debezium:debezium-testing-testcontainers:${versions.debeziumVersion}"
+	modules {
+		module('org.springframework.boot:spring-boot-starter-logging') {
+			replacedBy 'org.springframework.boot:spring-boot-starter-log4j2', 'Use Log4j2 instead of Logback'
+		}
+	}
+}
+
+sourceSets {
+	main {
+		java.srcDirs += cartApiGeneratedSrcDir
+		resources.srcDirs += cartAppGeneratedResDir
+	}
+}
+
+compileJava {
+	options.compilerArgs << '-Amapstruct.defaultComponentModel=spring' << '-Amapstruct.unmappedTargetPolicy=IGNORE'
+}
+
+lombok {
+	disableConfig = true
+}
+
+tasks.named('test') {
+	outputs.dir snippetsDir
+	useJUnitPlatform()
+}
+
+tasks.named('asciidoctor') {
+	inputs.dir snippetsDir
+	dependsOn test
+}
+
+task sourceJar(type: Jar) {
+	archiveClassifier = 'sources'
+	from sourceSets.main.allSource
+}
+
+tasks.withType(Jar) {
+	doFirst {
+		manifest {
+			attributes([
+					'Add-Opens': javaNio,
+					'Created-By': meta.createdBy,
+					'Built-By': meta.buildBy,
+
+					'Implementation-Title': project.description,
+					'Implementation-Vendor': meta.orgName,
+					'Implementation-Vendor-Id': project.group,
+					'Implementation-Version': project.version,
+
+					'Specification-Title': project.description,
+					'Specification-Version': project.version,
+					'Specification-Vendor': meta.orgName
+			] + buildInfo)
+		}
+	}
+}
+
+tasks.register('buildInfoGenerate').configure {
+	doLast {
+		file("${cartAppGeneratedResDir}/META-INF").mkdirs()
+		file("${cartAppGeneratedResDir}/META-INF/build-info.properties").text = buildInfo
+				.collect { k, v -> "${k.toLowerCase().replace('-', '.')} = ${v}" }
+				.join('\n')
+	}
+}
+
+tasks.withType(ProcessResources) {
+	dependsOn tasks.buildInfoGenerate
+}
+
+tasks.withType(JavaCompile) {
+	configure(options) {
+		// prevent warnings in generated sources
+		compilerArgs -= ['-Xlint:processing', '-Xlint:rawtypes', '-Xlint:unchecked']
+	}
+	sourceCompatibility = versions.javaVersion
+	targetCompatibility = versions.javaVersion
+}
+
+tasks.create(name: 'openApiGenerateShoppingCart', type: GenerateTask.class) {
+	def fileName = 'shopping-rest.yaml'
+	def packageName = fileName.take(fileName.lastIndexOf(".")).replace("-", ".")
+	def filePath = "${sourceSets.main.output.resourcesDir}/$fileName"
+	def projectGroup = 'ru.kovalev'
+	println "generating sources by open api spec ${filePath}"
+	generatorName = 'spring'
+	inputSpec = filePath
+	outputDir = cartApiGeneratedDir
+	apiPackage = "${projectGroup}.${packageName}.api"
+	modelPackage = "${projectGroup}.${packageName}.dto"
+	configOptions = [
+			dateLibrary: 'java8',
+			interfaceOnly: 'true',
+			openApiNullable: 'false',
+			java8: 'false'
+	]
+	importMappings = ['java.time.OffsetDateTime': 'java.time.Instant']
+	typeMappings = ['OffsetDateTime': 'Instant']
+}
+
+spotless {
+	// remove unused imports from generated code to make it compilable
+	format('openApi', JavaExtension) {
+		target fileTree(cartApiGeneratedDir) {
+			include '**/*.java'
+		}
+		removeUnusedImports()
+	}
+}
+
+openApiGenerateShoppingCart.dependsOn tasks.processResources
+tasks.sourceJar.dependsOn openApiGenerateShoppingCart
+
+openApiGenerateShoppingCart.finalizedBy tasks.spotlessOpenApiApply
+tasks.spotlessOpenApi.dependsOn openApiGenerateShoppingCart
+
+tasks.compileJava.dependsOn tasks.spotlessApply
+
+jib {
+	from {
+//		image = "registry.access.redhat.com/ubi8/openjdk-17:1.14-4.1666624568@sha256:22bf5a17dd7873b16e6f9211612a101af37af09b30de439c03a41e32320dd8bc"
+		image = "openjdk:17-oracle"
+	}
+	to {
+		image = "kovalev-${project.name}:${project.version}"
+	}
+	extraDirectories {
+		paths = "$rootDir/image"
+		permissions = [
+				'/*.sh': '755'
+		]
+	}
+	container {
+		entrypoint = ['/shopping.sh']
+	}
+	containerizingMode = 'packaged'
+	allowInsecureRegistries = true
+}

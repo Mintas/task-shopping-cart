@@ -1,0 +1,24 @@
+{
+  "name": "pg-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "plugin.name": "pgoutput",
+    "database.hostname": "postgres",
+    "database.port": "5432",
+    "database.user": "postgres",
+    "database.password": "postgres",
+    "database.dbname": "shopping",
+    "database.server.name": "shoppingdb",
+    "heartbeat.interval.ms": "5000",
+    "slot.name": "dbname_debezium",
+    "publication.name": "dbname_publication",
+    "publication.autocreate.mode": "filtered",
+    "table.include.list": "public.cart",
+    "transforms": "unwrap",
+    "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+    "transforms.unwrap.delete.handling.mode": "drop",
+    "transforms.unwrap.route.by.field": "cart_state"
+  }
+}
+
+{"name": "pg-connector", "config": {"connector.class": "io.debezium.connector.postgresql.PostgresConnector", "plugin.name": "pgoutput", "database.hostname": "postgres", "database.port": "5432", "database.user": "postgres", "database.password": "postgres", "database.dbname": "shopping", "database.server.name": "shoppingdb", "heartbeat.interval.ms": "5000", "slot.name": "dbname_debezium", "publication.name": "dbname_publication", "publication.autocreate.mode": "filtered", "table.include.list": "public.cart", "transforms": "unwrap", "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState", "transforms.unwrap.delete.handling.mode": "drop", "transforms.unwrap.route.by.field": "cart_state"}}
