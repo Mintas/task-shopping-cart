@@ -3,7 +3,7 @@
 ### How-to guide
 For further reference, please consider the following sections:
 
-* git clone project repo
+* git clone project repo (e.g. https://github.com/Mintas/task-shopping-cart.git )
 * run './gradlew letsShop -x test'
 * it will build project (skipping tests), pack image and start docker-compose
 * open [shoppingCartApi](http://localhost:8080/swagger-ui/index.html) in your browser
@@ -21,7 +21,7 @@ In case of any problems with build and run contact me.
 
 ### TODO List:
 Ordered in implementation priority
-1. refactor and push tests
+1. refactor and push more unit tests (there are already some integration tests)
 2. customize business exceptions
 3. write javadocs
 4. implement MockOrderManagement - CART_SUBMITTED consumer that will free items from reserved state
