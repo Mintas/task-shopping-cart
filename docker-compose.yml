@@ -9,52 +9,81 @@ services:
     ports:
       - '5432:5432'
     command: [ "postgres", "-c", "wal_level=logical"]
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
     environment:
       ZOOKEEPER_CLIENT_PORT: 22181
       ZOOKEEPER_TICK_TIME: 2000
-  #    ports:
-  #      - 22181:2181
 
   kafka:
-    image: confluentinc/cp-kafka:6.2.1 #debezium/kafka:1.9.4.Final
+    image: confluentinc/cp-kafka:6.2.1
     depends_on:
       - zookeeper
     ports:
-      - 29095:29095
       - 9095:9095
       - 9092:9092
     environment:
-      ALLOW_PLAINTEXT_LISTENERS: yes
+      SECURITY_PROTOCOL: PLAINTEXT
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:22181
-      #KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9095,PLAINTEXT_HOST://localhost:29095
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,SSL:SSL,SSL_HOST:SSL
-      #KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9095,PLAINTEXT_HOST://localhost:9092
       KAFKA_LISTENERS: PLAINTEXT://kafka:9095,PLAINTEXT_HOST://localhost:9092
+    healthcheck:
+      test: nc -z localhost 9092 || exit -1
+      start_period: 15s
+      interval: 5s
+      timeout: 10s
+      retries: 10
 
   connect:
     image: debezium/connect:1.9.4.Final
     depends_on:
-      - kafka
-      - postgres
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    ports:
+      - 8083:8083
     environment:
       - BOOTSTRAP_SERVERS=kafka:9095
       - GROUP_ID=shopping-connect
       - CONFIG_STORAGE_TOPIC=debezium_connect_config
       - OFFSET_STORAGE_TOPIC=debezium_connect_offsets
       - STATUS_STORAGE_TOPIC=debezium_connect_status
+    healthcheck:
+      test: ["CMD-SHELL", "[ $$(curl -s -o /dev/null -w %{http_code} localhost:8083/connectors) -eq 200 ] || exit -1"]
+      start_period: 15m
+      interval: 5s
+      timeout: 10s
+      retries: 10
+
+  connect-register:
+    build: .
+    image: confluentinc/cp-kafka:6.2.1
+    links:
+      - connect
+    depends_on:
+      postgres:
+        condition: service_healthy
+      connect:
+        condition: service_healthy
+    volumes:
+      - ./src/test/resources/debezium-pg-conn.json:/debezium-pg-conn.json
+    command: [ "sh", "-c", "curl -i -X POST -H Accept:application/json -H Content-Type:application/json connect:8083/connectors/ -d @./../../debezium-pg-conn.json" ]
 
   shopping:
     image: kovalev-shopping:0.0.1-SNAPSHOT
     depends_on:
-      - kafka
-      - postgres
-      - connect
+      connect-register:
+        condition: service_completed_successfully
     environment:
       - SHOPPING_DB_URL=jdbc:postgresql://postgres:5432/shopping
       - SHOPPING_CART_EXPIRATION_ROUTINEDELAY=2m

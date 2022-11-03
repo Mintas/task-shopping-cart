@@ -12,6 +12,7 @@ plugins {
 	id 'com.diffplug.spotless' version '5.12.5'
 	id 'org.openapi.generator' version '5.4.0'
 	id 'com.google.cloud.tools.jib' version '3.3.1'
+	id 'com.avast.gradle.docker-compose' version '0.16.9'
 	//id 'com.palantir.docker' version '0.30.0'
 }
 
@@ -238,3 +239,21 @@ jib {
 	containerizingMode = 'packaged'
 	allowInsecureRegistries = true
 }
+
+dockerCompose {
+	projectName = 'shopping-cart-project'
+	useComposeFiles = ['docker-compose.yml']
+	buildBeforeUp = false
+	checkContainersRunning = false
+	tcpPortsToIgnoreWhenWaiting = [9092]
+}
+
+tasks.jibDockerBuild.finalizedBy tasks.composeUp
+
+task letsShop {
+	doLast {
+		println 'Hello from alpha'
+	}
+}
+letsShop.dependsOn tasks.build
+letsShop.finalizedBy tasks.jibDockerBuild
