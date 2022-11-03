@@ -16,16 +16,13 @@ spring:
       add-mappings: false
   mvc:
     throw-exception-if-no-handler-found: true
-  security:
-#    user:
-#      name: user
-#      password: user
-    oauth2:
-      client:
-        registration:
-          google:
-            client-id: 61683032931-1gnrvhh78joou76lof8ftf52doardo75.apps.googleusercontent.com
-            client-secret: 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
+
+#    oauth2:
+#      client:
+#        registration:
+#          google:
+#            client-id: 61683032931-1gnrvhh78joou76lof8ftf52doardo75.apps.googleusercontent.com
+#            client-secret: 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
 
 shopping:
   db:
@@ -38,4 +35,22 @@ shopping:
       routine-delay: 5m
   orders:
     topic: order-carts
+  security:
+    oauth2: true
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: 61683032931-1gnrvhh78joou76lof8ftf52doardo75.apps.googleusercontent.com
+            client-secret: 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
+shopping:
+  security:
+    oauth2: true
 

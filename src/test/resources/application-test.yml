@@ -1,0 +1,8 @@
+spring:
+  security:
+    user:
+      name: user
+      password: user
+shopping:
+  security:
+    oauth2: false

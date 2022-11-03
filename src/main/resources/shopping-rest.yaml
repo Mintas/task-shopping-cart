@@ -70,7 +70,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AddItemRequest'
+              $ref: '#/components/schemas/ChangeQuantityRequest'
         required: true
       responses:
         '200':
@@ -98,7 +98,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/CartResponseDto'
   /cart/item/quantity:
-    put:
+    post:
       summary: CART_CHANGE_ITEM_QUANTITY
       description: Изменение количества товара в корзине
       operationId: changeItemQuantity
@@ -170,17 +170,6 @@ components:
           items:
             $ref: '#/components/schemas/ProductResponseDto'
 
-    AddItemRequest:
-      required:
-        - productId
-        - quantity
-      type: object
-      properties:
-        productId:
-          format: uuid
-          type: string
-        quantity:
-          type: integer
     RemoveItemRequest:
       required:
         - productId

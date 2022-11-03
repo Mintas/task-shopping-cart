@@ -16,7 +16,6 @@ import ru.kovalev.shopping.mapper.CartDtoMapper;
 import ru.kovalev.shopping.mapper.ItemDtoMapper;
 import ru.kovalev.shopping.repository.ProductRepository;
 import ru.kovalev.shopping.rest.api.CartApi;
-import ru.kovalev.shopping.rest.dto.AddItemRequest;
 import ru.kovalev.shopping.rest.dto.CartResponseDto;
 import ru.kovalev.shopping.rest.dto.ChangeQuantityRequest;
 import ru.kovalev.shopping.rest.dto.ItemResponseDto;
@@ -27,7 +26,7 @@ import ru.kovalev.shopping.service.ShoppingService;
 @RestController
 @Tag(name = "cart", description = "the cart API")
 @RequestMapping("v0")
-@SecurityRequirement(name = SwaggerConfig.OIDC, scopes = SwaggerConfig.SCOPE_OPENID)
+@SecurityRequirement(name = SwaggerConfig.SECURED)
 @RequiredArgsConstructor
 public class CartApiController implements CartApi {
     private final ShoppingService shoppingService;
@@ -43,7 +42,7 @@ public class CartApiController implements CartApi {
     }
 
     @Override
-    public ResponseEntity<CartResponseDto> addItemToCart(AddItemRequest addItemRequest) {
+    public ResponseEntity<CartResponseDto> addItemToCart(ChangeQuantityRequest addItemRequest) {
         var product = fetchProduct(addItemRequest.getProductId());
         var cart = doFetchCart();
 

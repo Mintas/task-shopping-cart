@@ -15,7 +15,7 @@ import ru.kovalev.shopping.rest.dto.ProductResponseDto;
 
 @RestController
 @RequestMapping("v0")
-@SecurityRequirement(name = SwaggerConfig.OIDC, scopes = SwaggerConfig.SCOPE_OPENID)
+@SecurityRequirement(name = SwaggerConfig.SECURED)
 @RequiredArgsConstructor
 public class BookApiController implements BookApi {
     private final ProductRepository productRepository;

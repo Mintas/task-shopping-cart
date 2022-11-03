@@ -1,6 +1,10 @@
 package ru.kovalev.shopping.exceptions;
 
+import java.net.URI;
 import java.sql.SQLException;
+import java.util.Collection;
+import static java.util.Comparator.comparing;
+import static java.util.stream.Collectors.toList;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.TransactionException;
@@ -11,6 +15,7 @@ import org.zalando.problem.Problem;
 import org.zalando.problem.Status;
 import org.zalando.problem.spring.web.advice.ProblemHandling;
 import org.zalando.problem.spring.web.advice.validation.ConstraintViolationAdviceTrait;
+import org.zalando.problem.violations.Violation;
 
 @ControllerAdvice
 public class ProblemExceptionHandler implements
@@ -32,5 +37,32 @@ public class ProblemExceptionHandler implements
                         .withDetail(DATABASE_ERROR)
                         .build(),
                 nativeWebRequest);
+    }
+
+    /**
+     * see  {@link org.zalando.problem.spring.web.advice.validation.BaseValidationAdviceTrait}
+     * @return problem with Title consistent with other handlers, also returns descriptive details to problem contract
+     */
+    @Override
+    public ResponseEntity<Problem> newConstraintViolationProblem(Throwable throwable,
+                                                                 Collection<Violation> stream,
+                                                                 NativeWebRequest request) {
+
+        final var type = defaultConstraintViolationType();
+        final var status = defaultConstraintViolationStatus();
+
+        final var violations = stream.stream()
+                // sorting to make tests deterministic
+                .sorted(comparing(Violation::getField).thenComparing(Violation::getMessage))
+                .collect(toList());
+
+        final Problem problem = new ConstraintViolationProblemWithDetail(type, status, violations);
+
+        return create(throwable, problem, request);
+    }
+
+    @Override
+    public URI defaultConstraintViolationType() {
+        return Problem.DEFAULT_TYPE;
     }
 }

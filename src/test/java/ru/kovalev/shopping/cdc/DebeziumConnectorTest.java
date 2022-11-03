@@ -14,7 +14,6 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -23,6 +22,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.kafka.support.JacksonUtils;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.KafkaContainer;
@@ -43,29 +43,30 @@ import ru.kovalev.shopping.service.CustomerService;
 import ru.kovalev.shopping.service.ShoppingService;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @Testcontainers
 @Slf4j
 public class DebeziumConnectorTest {
-    private static Network network = Network.newNetwork();
+    private static final Network NETWORK = Network.newNetwork();
 
     @Container
     private static final PostgreSQLContainer<?> POSTGRES =
             new PostgreSQLContainer<>(DockerImageName.parse("postgres:13.5"))
-                    .withNetwork(network)
+                    .withNetwork(NETWORK)
                     .withNetworkAliases("postgres")
                     .withCommand("postgres -c wal_level=logical");
     @Container
     protected static final KafkaContainer KAFKA =
             new KafkaContainer(
                     DockerImageName.parse("confluentinc/cp-kafka:6.2.1"))
-                    .withNetwork(network);
+                    .withNetwork(NETWORK);
 
     private static final Slf4jLogConsumer DEBEZIUM_LOG_CONSUMER = new Slf4jLogConsumer(log);
     @Container
     protected static final DebeziumContainer DEBEZIUM =
             new DebeziumContainer("debezium/connect:1.9.4.Final")
-                    .withNetwork(network)
+                    .withNetwork(NETWORK)
                     .withKafka(KAFKA)
                     .dependsOn(KAFKA, POSTGRES)
                     .withLogConsumer(DEBEZIUM_LOG_CONSUMER);
@@ -142,7 +143,7 @@ public class DebeziumConnectorTest {
                 .atMost(Durations.TEN_SECONDS)
                 .pollInterval(Durations.ONE_HUNDRED_MILLISECONDS)
                 .until(() -> {
-                    ConsumerRecords<?, ?> poll = consumer.poll(Duration.ofMillis(50));
+                    var poll = consumer.poll(Duration.ofMillis(50));
                     poll.forEach(messages::add);
                     return messages.size() == 1;
                 });
