@@ -2,24 +2,21 @@ package ru.kovalev.shopping.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.TestPropertySource;
 import ru.kovalev.shopping.BaseIntegrationTest;
-import ru.kovalev.shopping.domain.Customer;
-import ru.kovalev.shopping.repository.CustomerRepository;
-import ru.kovalev.shopping.util.TestData;
+import ru.kovalev.shopping.domain.Item;
 
+@TestPropertySource(properties = {
+        "logging.level.org.hibernate.SQL=DEBUG",
+        "logging.level.org.hibernate.type=TRACE",
+        "logging.level.org.hibernate.type.descriptor.sql.BasicBinder=TRACE"
+})
 class ShoppingServiceImplTest extends BaseIntegrationTest {
-    @Autowired
-    CustomerRepository customerRepository;
 
     @Test
-    void addFirstItem() {
-        var customer = new Customer();
-        customer.setName("Name_buyer");
-        customerRepository.save(customer);
-
-        var product = TestData.productSomething10();
-        productRepository.save(product);
+    void addItemToCart() {
+        var customer = createCustomer();
+        var product = productSomething10();
 
         var quantity = 5;
         var buyerCart = shoppingService.getCustomersCart(customer);
@@ -27,11 +24,13 @@ class ShoppingServiceImplTest extends BaseIntegrationTest {
 
         assertThat(product.getReserved()).isEqualTo(product.getStored() - quantity);
         assertThat(cart.getItems()).hasSize(1)
-                        .allMatch(i -> i.getProduct().equals(product) && i.getQuantity() == quantity);
+                .first().extracting(Item::getProduct, Item::getQuantity, Item::getCart)
+                .containsExactly(product, quantity, cart);
 
         var p2 = productRepository.findById(product.getId());
         var cart2 = shoppingService.addItemToCart(cart, p2.get(), quantity);
         System.out.println("wow");
     }
+
 
 }

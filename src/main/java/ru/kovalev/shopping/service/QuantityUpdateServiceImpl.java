@@ -4,11 +4,13 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
+import javax.validation.constraints.PositiveOrZero;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 import ru.kovalev.shopping.domain.Cart;
 import ru.kovalev.shopping.domain.Item;
 import ru.kovalev.shopping.domain.Product;
+import ru.kovalev.shopping.exceptions.ShopEntityNotFoundProblem;
 import ru.kovalev.shopping.repository.ItemRepository;
 import ru.kovalev.shopping.repository.ProductRepository;
 
@@ -32,7 +34,7 @@ public class QuantityUpdateServiceImpl implements QuantityUpdateService {
 
     @Override
     @Transactional
-    public Item updateQuantity(Cart cart, Product product, int quantity) {
+    public Item updateQuantity(Cart cart, Product product, @PositiveOrZero int quantity) {
         if (quantity == 0) {
             throw new IllegalArgumentException("cannot add 0 quantity");
         }
@@ -45,7 +47,8 @@ public class QuantityUpdateServiceImpl implements QuantityUpdateService {
             return updateQuantity(cart, product,
                     it -> Math.max(-it.getQuantity(), quantity),
                     this::canWithholdFromReserve,
-                    o -> o.orElseThrow(() -> new IllegalStateException("no such product in cart")));
+                    o -> o.orElseThrow(() -> new ShopEntityNotFoundProblem(
+                            Product.class, product.getId(), () -> "in cart " + cart.getId())));
         }
     }
 

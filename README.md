@@ -20,7 +20,7 @@ In case of any problems with build and run contact me.
 
 
 ### TODO List:
-Ordered in implementation priority
+Ordered by implementation priority
 1. refactor and push tests
 2. customize business exceptions
 3. write javadocs

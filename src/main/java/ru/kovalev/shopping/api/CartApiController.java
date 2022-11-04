@@ -8,10 +8,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ru.kovalev.shopping.config.SwaggerConfig;
-import ru.kovalev.shopping.domain.Customer;
 import ru.kovalev.shopping.domain.Cart;
+import ru.kovalev.shopping.domain.Customer;
 import ru.kovalev.shopping.domain.Item;
 import ru.kovalev.shopping.domain.Product;
+import ru.kovalev.shopping.exceptions.ShopEntityNotFoundProblem;
 import ru.kovalev.shopping.mapper.CartDtoMapper;
 import ru.kovalev.shopping.mapper.ItemDtoMapper;
 import ru.kovalev.shopping.repository.ProductRepository;
@@ -71,7 +72,6 @@ public class CartApiController implements CartApi {
     @Override
     public ResponseEntity<CartResponseDto> orderCart() {
         var cart = doFetchCart();
-        //todo : throw exception if cart is empty!
         shoppingService.order(cart);
         return cartToDto(cart);
     }
@@ -91,7 +91,7 @@ public class CartApiController implements CartApi {
 
     private Product fetchProduct(UUID productId) {
         return productRepository.findById(productId)
-                .orElseThrow(() -> new IllegalStateException("product not identified"));
+                .orElseThrow(() -> new ShopEntityNotFoundProblem(Product.class, productId));
     }
 
     private Customer fetchCustomer() {

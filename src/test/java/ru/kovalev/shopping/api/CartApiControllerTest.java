@@ -2,21 +2,27 @@ package ru.kovalev.shopping.api;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
+import java.util.function.Consumer;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.assertj.core.api.AbstractStringAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.zalando.problem.DefaultProblem;
-import org.zalando.problem.Status;
 import ru.kovalev.shopping.BaseIntegrationTest;
 import ru.kovalev.shopping.domain.CartState;
 import ru.kovalev.shopping.domain.Product;
+import ru.kovalev.shopping.exceptions.ConstraintViolationProblemWithDetail;
 import ru.kovalev.shopping.rest.dto.CartResponseDto;
 import ru.kovalev.shopping.rest.dto.ChangeQuantityRequest;
 import ru.kovalev.shopping.rest.dto.ItemResponseDto;
+import ru.kovalev.shopping.rest.dto.ProductResponseDto;
 import ru.kovalev.shopping.rest.dto.RemoveItemRequest;
-import ru.kovalev.shopping.util.TestData;
+import ru.kovalev.shopping.validation.NotZero;
 
 class CartApiControllerTest extends BaseIntegrationTest {
     public static final String CART_PATH = "/v0/cart/";
@@ -27,8 +33,7 @@ class CartApiControllerTest extends BaseIntegrationTest {
     @BeforeEach
     protected void setUp() {
         super.setUp();
-        var product = TestData.productSomething10();
-        this.product = productRepository.save(product);
+        this.product = productSomething10();
     }
 
     @Test
@@ -80,7 +85,8 @@ class CartApiControllerTest extends BaseIntegrationTest {
     private void assertItem(ItemResponseDto item, ChangeQuantityRequest request,
                             boolean isDeleted, int productLeftovers) {
         assertThat(item.getProduct())
-                .extracting("id", "name", "description", "availableQuantity")
+                .extracting(ProductResponseDto::getId, ProductResponseDto::getName, ProductResponseDto::getDescription,
+                        ProductResponseDto::getAvailableQuantity)
                 .containsExactly(product.getId(), product.getName(), product.getDescription(), productLeftovers);
         assertThat(item.getQuantity()).isEqualTo(request.getQuantity());
         assertThat(item.getDeleted()).isEqualTo(isDeleted);
@@ -93,8 +99,7 @@ class CartApiControllerTest extends BaseIntegrationTest {
 
         var response =
                 restTemplate.postForEntity(CART_PATH + "remove", request, DefaultProblem.class);
-        assertStatus(response, HttpStatus.INTERNAL_SERVER_ERROR);
-        assertNotInCartProblem(response);
+        assertProductNotFound(response, request.getProductId(), " in cart");
     }
 
     @Test
@@ -114,20 +119,31 @@ class CartApiControllerTest extends BaseIntegrationTest {
 
     @Test
     void changeItemQuantity_throwsIfParameterConstraintViolated() {
-        var request = new RemoveItemRequest()
+        var request = new ChangeQuantityRequest()
                 .productId(product.getId());
 
         var response =
                 restTemplate.postForEntity(CART_PATH + "item/quantity", request, DefaultProblem.class);
-        assertStatus(response, HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody())
-                .satisfies(problem -> {
-                    assertThat(problem.getTitle()).isEqualTo(Status.BAD_REQUEST.getReasonPhrase());
-                    assertThat(problem.getDetail()).isEqualTo("Constraint Violation");
-                    assertThat(problem.getParameters().get("violations"))
-                            .asList().hasSize(1).first()
-                            .isEqualTo(Map.of("field", "quantity", "message", "не должно равняться null"));
-                });
+        assertConstraintVioldation(response, "quantity", "не должно равняться null");
+    }
+
+    @Test
+    void changeItemQuantity_throwsIfZeroQuantity() {
+        var request = new ChangeQuantityRequest()
+                .productId(product.getId())
+                .quantity(0);
+
+        var response =
+                restTemplate.postForEntity(CART_PATH + "item/quantity", request, DefaultProblem.class);
+        assertConstraintVioldation(response, "changeItemQuantity.arg0.quantity", NotZero.NOT_ZERO_VIOLATION);
+    }
+
+    private void assertConstraintVioldation(ResponseEntity<DefaultProblem> response,
+                                            String fieldName, String violation) {
+        assertProblem(response, HttpStatus.BAD_REQUEST, ConstraintViolationProblemWithDetail.DETAIL_MESSAGE);
+        assertThat(response.getBody()).extracting(DefaultProblem::getParameters)
+                .extracting("violations").asList().hasSize(1)
+                .first().isEqualTo(Map.of("field", fieldName, "message", violation));
     }
 
     @Test
@@ -138,13 +154,8 @@ class CartApiControllerTest extends BaseIntegrationTest {
 
         var response =
                 restTemplate.postForEntity(CART_PATH + "item/quantity", request, DefaultProblem.class);
-        assertStatus(response, HttpStatus.INTERNAL_SERVER_ERROR);
-        assertThat(response.getBody())
-                .satisfies(problem -> {
-                    assertThat(problem.getTitle()).isEqualTo(Status.INTERNAL_SERVER_ERROR.getReasonPhrase());
-                    assertThat(problem.getDetail()).isEqualTo(
-                            "Insufficient item amount! Stored: 10, Reserved: 0! Available: 10");
-                });
+        assertProblem(response, HttpStatus.INTERNAL_SERVER_ERROR,
+                "Insufficient item amount! Stored: 10, Reserved: 0! Available: 10");
     }
 
     @Test
@@ -155,8 +166,60 @@ class CartApiControllerTest extends BaseIntegrationTest {
 
         var response =
                 restTemplate.postForEntity(CART_PATH + "item/quantity", request, DefaultProblem.class);
-        assertStatus(response, HttpStatus.INTERNAL_SERVER_ERROR);
-        assertNotInCartProblem(response);
+        assertProductNotFound(response, request.getProductId(), " in cart");
+    }
+
+    @Test
+    void changeItemQuantity_throwsIfUnknownProduct() {
+        var request = new ChangeQuantityRequest()
+                .productId(UUID.randomUUID())
+                .quantity(25);
+
+        var response =
+                restTemplate.postForEntity(CART_PATH + "item/quantity", request, DefaultProblem.class);
+        assertProductNotFound(response, request.getProductId(), "");
+    }
+
+    private void assertProductNotFound(ResponseEntity<DefaultProblem> response, UUID productId, String location) {
+        assertProblem(response, HttpStatus.NOT_FOUND, a -> a.contains(
+                "Entity of type 'Product' with id '%s' not found%s".formatted(productId, location)));
+    }
+
+    private void assertProblem(ResponseEntity<DefaultProblem> response, HttpStatus status, String details) {
+        assertProblem(response, status, a -> a.isEqualTo(details));
+    }
+
+    private void assertProblem(ResponseEntity<DefaultProblem> response, HttpStatus status,
+                               Consumer<AbstractStringAssert<?>> assertDetails) {
+        assertStatus(response, status);
+        assertThat(response.getBody())
+                .satisfies(problem -> {
+                    assertThat(problem.getTitle()).isEqualTo(status.getReasonPhrase());
+                    assertDetails.accept(assertThat(problem.getDetail()));
+                });
+    }
+
+    @Test
+    void optimisticLockProtection_throws() {
+        var request = new ChangeQuantityRequest()
+                .productId(product.getId())
+                .quantity(product.getAvailableQuantity() - 2);
+
+        restTemplate.getForEntity(CART_PATH + "fetch", CartResponseDto.class);
+        var allCarts = cartRepository.findAll().iterator();
+        var initCart = allCarts.next();
+        assertThat(allCarts.hasNext()).isFalse();
+
+        var response =
+                restTemplate.postForEntity(CART_PATH + "item/quantity", request, ItemResponseDto.class);
+        assertStatus(response, HttpStatus.OK);
+
+        assertThatThrownBy(() -> shoppingService.updateQuantity(initCart, product, 2))
+                .isInstanceOf(ObjectOptimisticLockingFailureException.class)
+                .hasMessageContainingAll(
+                        "Object of class [ru.kovalev.shopping.domain.Product]",
+                        "optimistic locking failed",
+                        "Row was updated or deleted by another transaction (or unsaved-value mapping was incorrect)");
     }
 
     @Test
@@ -180,14 +243,6 @@ class CartApiControllerTest extends BaseIntegrationTest {
                 bigMinus.quantity(0), false, product.getStored());
     }
 
-    private void assertNotInCartProblem(ResponseEntity<DefaultProblem> response) {
-        assertThat(response.getBody())
-                .satisfies(problem -> {
-                    assertThat(problem.getTitle()).isEqualTo(Status.INTERNAL_SERVER_ERROR.getReasonPhrase());
-                    assertThat(problem.getDetail()).isEqualTo("no such product in cart");
-                });
-    }
-
     @Test
     void orderCart() {
         var request = new ChangeQuantityRequest()
@@ -201,6 +256,13 @@ class CartApiControllerTest extends BaseIntegrationTest {
 
         var ordered = restTemplate.getForEntity(CART_PATH + "order", CartResponseDto.class);
         assertSingleItemCart(ordered, request, false, 0, CartState.CART_SUBMITTED);
+    }
+
+    @Test
+    void orderCart_throwsOnEmptyCart() {
+        var ordered = restTemplate.getForEntity(CART_PATH + "order", DefaultProblem.class);
+
+        assertConstraintVioldation(ordered, "order.arg0.items", "не должно быть пустым");
     }
 
     private void assertStatus(ResponseEntity<?> response, HttpStatus expected) {

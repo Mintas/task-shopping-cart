@@ -1,10 +1,13 @@
 package ru.kovalev.shopping.service;
 
-import ru.kovalev.shopping.domain.Customer;
+import javax.validation.constraints.NotEmpty;
+import org.springframework.validation.annotation.Validated;
 import ru.kovalev.shopping.domain.Cart;
+import ru.kovalev.shopping.domain.Customer;
 import ru.kovalev.shopping.domain.Item;
 import ru.kovalev.shopping.domain.Product;
 
+@Validated
 public interface ShoppingService extends QuantityUpdateService {
     Cart addItemToCart(Cart cart, Product product, int quantity);
 
@@ -12,7 +15,7 @@ public interface ShoppingService extends QuantityUpdateService {
 
     Item updateQuantity(Cart cart, Product product, int quantityChange);
 
-    boolean order(Cart cart);
+    boolean order(@NotEmpty Cart cart);
 
     Cart getCustomersCart(Customer customer);
 }

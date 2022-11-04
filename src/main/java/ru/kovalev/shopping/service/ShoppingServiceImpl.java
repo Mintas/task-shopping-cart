@@ -3,9 +3,9 @@ package ru.kovalev.shopping.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.kovalev.shopping.domain.Cart;
 import ru.kovalev.shopping.domain.CartState;
 import ru.kovalev.shopping.domain.Customer;
-import ru.kovalev.shopping.domain.Cart;
 import ru.kovalev.shopping.domain.Item;
 import ru.kovalev.shopping.domain.Product;
 import ru.kovalev.shopping.repository.CartRepository;
@@ -35,9 +35,6 @@ public class ShoppingServiceImpl implements ShoppingService {
     @Override
     @Transactional
     public Cart addItemToCart(Cart cart, Product product, int quantity) {
-        if (quantity <= 0) {
-            throw new IllegalArgumentException("quantity must be Positive");
-        }
         itemUpdatingService.updateQuantity(cart, product, quantity);
         return cart;
     }
@@ -55,17 +52,12 @@ public class ShoppingServiceImpl implements ShoppingService {
     public boolean order(Cart cart) {
         cart.setCartState(CartState.CART_SUBMITTED);
         cartRepository.softDelete(cart);
-//        cart.getItems().stream()
-//                .filter(i -> !i.isDeleted())
-//                .forEach(i -> ordered(i));
-        //NB! also we need to fix new remaining quantity for products but
-        //this will be implemented as a reaction of order-management-system (after consuming CDC)
         return true;
     }
 
     @Override
     @Transactional
     public Item updateQuantity(Cart cart, Product product, int quantity) {
-         return itemUpdatingService.updateQuantity(cart, product, quantity);
+        return itemUpdatingService.updateQuantity(cart, product, quantity);
     }
 }
