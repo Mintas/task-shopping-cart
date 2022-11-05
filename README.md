@@ -21,10 +21,10 @@ In case of any problems with build and run contact me.
 
 ### TODO List:
 Ordered by implementation priority
-1. refactor and push more unit tests (there are plenty of integration tests)
-2. customize business exceptions (mostly done)
-3. write javadocs
-4. implement MockOrderManagement - CART_SUBMITTED consumer that will free items from reserved state
+1. describe errors in rest specs
+2. write javadocs
+3. implement MockOrderManagement - CART_SUBMITTED consumer that will free items from reserved state
+4. add static code analisys: pmd, checkstyle; add jacoco
 5. implemet GUI (ReactJS  + node plugin)
 6. split to microservices with common gateway (as resource server) such as:
  BookApplication, CartApplication, UiApplication, OrderManagementApplication, GatewayApplication

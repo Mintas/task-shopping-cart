@@ -22,8 +22,8 @@ public class ExpirationConfig {
     @Bean
     public CartExpirationService cartExpirationService(
             CartRepository cartRepository,
-            QuantityUpdateService itemSkippingService,
+            QuantityUpdateService quantityUpdateService,
             @Value("${shopping.cart.expiration.ttl}") Duration expirationInterval) {
-        return new CartExpirationServiceImpl(cartRepository, itemSkippingService, expirationInterval);
+        return new CartExpirationServiceImpl(cartRepository, quantityUpdateService, expirationInterval);
     }
 }

@@ -5,8 +5,5 @@ import ru.kovalev.shopping.domain.Cart;
 import ru.kovalev.shopping.rest.dto.CartResponseDto;
 
 @Mapper
-public interface CartDtoMapper extends BaseDtoMapper<Cart, CartResponseDto> {
-
-//    @Mapping(target = "createdAt", )
-//    Cart fromSqlMap(Map<String, Object> asMapWithSqlNamedFields);
+public interface CartDtoMapper extends ToDtoMapper<Cart, CartResponseDto> {
 }

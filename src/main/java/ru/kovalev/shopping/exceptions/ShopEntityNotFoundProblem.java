@@ -18,8 +18,8 @@ public class ShopEntityNotFoundProblem extends AbstractThrowableProblem {
                 formatMessage(clazz, entityId, location));
     }
 
-    private static String formatMessage(Class<?> clazz, Object entityId, Supplier<String> location) {
-        String error = ERROR_MESSAGE_WITH_ID.formatted(clazz.getSimpleName(), entityId);
+    public static String formatMessage(Class<?> clazz, Object entityId, Supplier<String> location) {
+        var error = ERROR_MESSAGE_WITH_ID.formatted(clazz.getSimpleName(), entityId);
         return location == null ? error : AT_LOCATION.formatted(error, location.get());
     }
 }

@@ -148,14 +148,16 @@ class CartApiControllerTest extends BaseIntegrationTest {
 
     @Test
     void changeItemQuantity_throwsIfInsufficientQuantity() {
+        var quantity = product.getAvailableQuantity() + 1;
         var request = new ChangeQuantityRequest()
                 .productId(product.getId())
-                .quantity(product.getAvailableQuantity() + 1);
+                .quantity(quantity);
 
         var response =
                 restTemplate.postForEntity(CART_PATH + "item/quantity", request, DefaultProblem.class);
-        assertProblem(response, HttpStatus.INTERNAL_SERVER_ERROR,
-                "Insufficient item amount! Stored: 10, Reserved: 0! Available: 10");
+        assertProblem(response, HttpStatus.BAD_REQUEST,
+                "Insufficient product quantity '%d' for '%s'. ".formatted(quantity, product.getId())
+                        + "Stored: 10, Reserved: 0! Available: 10");
     }
 
     @Test

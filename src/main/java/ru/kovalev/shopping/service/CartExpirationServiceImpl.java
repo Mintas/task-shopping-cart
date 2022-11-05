@@ -14,7 +14,7 @@ import ru.kovalev.shopping.repository.CartRepository;
 @RequiredArgsConstructor
 public class CartExpirationServiceImpl implements CartExpirationService {
     private final CartRepository cartRepository;
-    private final QuantityUpdateService itemSkippingService;
+    private final QuantityUpdateService quantityUpdateService;
     private final Duration expirationInterval;
 
     @Override
@@ -49,6 +49,6 @@ public class CartExpirationServiceImpl implements CartExpirationService {
         cart.setCartState(CartState.CART_OBSOLETE);
         cartRepository.softDelete(cart);
         cart.getItems().forEach(item ->
-                itemSkippingService.updateQuantity(cart, item.getProduct(), -item.getQuantity()));
+                quantityUpdateService.updateQuantity(cart, item.getProduct(), -item.getQuantity()));
     }
 }

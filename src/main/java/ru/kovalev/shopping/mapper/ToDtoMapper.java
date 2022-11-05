@@ -4,12 +4,11 @@
 
 package ru.kovalev.shopping.mapper;
 
-import java.util.List;
 import org.mapstruct.MapperConfig;
 import ru.kovalev.shopping.domain.BaseEntity;
 
 @MapperConfig
-public interface BaseDtoMapper<E extends BaseEntity, DTO> extends ToDtoMapper<E, DTO> {
+public interface ToDtoMapper<E extends BaseEntity, DTO> {
 
-    List<DTO> toList(Iterable<E> entities);
+    DTO toDto(E entity);
 }

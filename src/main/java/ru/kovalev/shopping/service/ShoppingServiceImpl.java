@@ -9,15 +9,12 @@ import ru.kovalev.shopping.domain.Customer;
 import ru.kovalev.shopping.domain.Item;
 import ru.kovalev.shopping.domain.Product;
 import ru.kovalev.shopping.repository.CartRepository;
-import ru.kovalev.shopping.repository.ItemRepository;
 
 @Service
 @RequiredArgsConstructor
 public class ShoppingServiceImpl implements ShoppingService {
     private final CartRepository cartRepository;
-    private final ItemRepository itemRepository;
-    private final QuantityUpdateService itemUpdatingService;
-    private final QuantityUpdateService itemSkippingService;
+    private final QuantityUpdateService quantityUpdateService;
 
     @Override
     public Cart getCustomersCart(Customer customer) {
@@ -35,16 +32,20 @@ public class ShoppingServiceImpl implements ShoppingService {
     @Override
     @Transactional
     public Cart addItemToCart(Cart cart, Product product, int quantity) {
-        itemUpdatingService.updateQuantity(cart, product, quantity);
+        quantityUpdateService.updateQuantity(cart, product, quantity);
         return cart;
     }
 
     @Override
     @Transactional
-    public boolean removeItemFromCart(Cart cart, Product product) {
-        var item = itemSkippingService.updateQuantity(cart, product, Integer.MIN_VALUE);
-        itemRepository.softDelete(item);
-        return true;
+    public Item removeItemFromCart(Cart cart, Product product) {
+        return quantityUpdateService.removeItemFromCart(cart, product);
+    }
+
+    @Override
+    @Transactional
+    public Item updateQuantity(Cart cart, Product product, int quantity) {
+        return quantityUpdateService.updateQuantity(cart, product, quantity);
     }
 
     @Override
@@ -53,11 +54,5 @@ public class ShoppingServiceImpl implements ShoppingService {
         cart.setCartState(CartState.CART_SUBMITTED);
         cartRepository.softDelete(cart);
         return true;
-    }
-
-    @Override
-    @Transactional
-    public Item updateQuantity(Cart cart, Product product, int quantity) {
-        return itemUpdatingService.updateQuantity(cart, product, quantity);
     }
 }

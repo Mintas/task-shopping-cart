@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import io.debezium.testing.testcontainers.Connector;
@@ -15,7 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -109,7 +109,7 @@ public class DebeziumConnectorTest {
         var messages = drainMessages(consumer);
         System.out.println(messages);
         var msg = messages.get(0);
-        Assertions.assertThat(msg.value())
+        assertThat(msg.value())
                 .usingRecursiveComparison()
                 .ignoringFields("customer", "items")
                 .isEqualTo(cartRepository.findById(cart.getId()).get());

@@ -6,4 +6,6 @@ import ru.kovalev.shopping.domain.Product;
 
 public interface QuantityUpdateService {
     Item updateQuantity(Cart cart, Product product, int quantity);
+
+    Item removeItemFromCart(Cart cart, Product product);
 }
