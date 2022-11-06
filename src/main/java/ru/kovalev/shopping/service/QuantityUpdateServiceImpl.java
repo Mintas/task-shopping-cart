@@ -16,13 +16,13 @@ import ru.kovalev.shopping.repository.ItemRepository;
 import ru.kovalev.shopping.repository.ProductRepository;
 
 @Service("quantityUpdateService")
+@Transactional
 @RequiredArgsConstructor
 public class QuantityUpdateServiceImpl implements QuantityUpdateService {
     private final ItemRepository itemRepository;
     private final ProductRepository productRepository;
 
     @Override
-    @Transactional
     public Item updateQuantity(Cart cart, Product product, @PositiveOrZero int quantity) {
         return updateQuantity(cart, product, quantity, UpdateMode.UPDATE);
     }
@@ -77,8 +77,15 @@ public class QuantityUpdateServiceImpl implements QuantityUpdateService {
                         .map(item -> {
                             var quantity = limitQuantity.apply(item);
                             checkProductQuantityCondition(product, quantity, limitCondition);
-                            return updateQuantity(item, product, quantity, updateMode);
+                            var updated = updateQuantity(item, product, quantity, updateMode);
+                            replace(cart, item, updated);
+                            return updated;
                         }));
+    }
+
+    private void replace(Cart cart, Item item, Item updated) {
+        cart.getItems().remove(item);
+        cart.getItems().add(updated);
     }
 
     private void checkProductQuantityCondition(Product product, Integer quantity,
@@ -95,7 +102,7 @@ public class QuantityUpdateServiceImpl implements QuantityUpdateService {
 
     private Item updateQuantity(Item item, Product product, int quantity, UpdateMode updateMode) {
         product.setReserved(product.getReserved() + quantity);
-        productRepository.save(product);
+        item.setProduct(productRepository.save(product));
         return updateItem(item, quantity, updateMode);
     }
 

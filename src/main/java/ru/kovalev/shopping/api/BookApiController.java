@@ -13,6 +13,11 @@ import ru.kovalev.shopping.rest.dto.CreateBookRequest;
 import ru.kovalev.shopping.rest.dto.ProductListDto;
 import ru.kovalev.shopping.rest.dto.ProductResponseDto;
 
+/**
+ * NB this is a known decoupling pattern with Controller <-> UseCase <-> Service <-> Repository. Therefore,
+ * this implementation has been left using ProductRepository with intent not to introduce complexity without exact benefit.
+ * Anyway possible implementations of missing layers would be trivial delegates.
+ */
 @RestController
 @RequestMapping("v0")
 @SecurityRequirement(name = SwaggerConfig.SECURED)

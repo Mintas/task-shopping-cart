@@ -30,8 +30,7 @@ public class ProblemExceptionHandler implements
     @ExceptionHandler({
             DataAccessException.class,
             TransactionException.class,
-            SQLException.class,
-            //PSQLException.class, //requires implementation level dependency on postgresql
+            SQLException.class
     })
     protected ResponseEntity<Problem> handleProblem(Exception exception, NativeWebRequest nativeWebRequest) {
         return create(exception,

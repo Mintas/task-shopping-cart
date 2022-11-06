@@ -11,6 +11,7 @@ import ru.kovalev.shopping.domain.Product;
 import ru.kovalev.shopping.repository.CartRepository;
 
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class ShoppingServiceImpl implements ShoppingService {
     private final CartRepository cartRepository;
@@ -30,26 +31,22 @@ public class ShoppingServiceImpl implements ShoppingService {
     }
 
     @Override
-    @Transactional
     public Cart addItemToCart(Cart cart, Product product, int quantity) {
         quantityUpdateService.updateQuantity(cart, product, quantity);
         return cart;
     }
 
     @Override
-    @Transactional
     public Item removeItemFromCart(Cart cart, Product product) {
         return quantityUpdateService.removeItemFromCart(cart, product);
     }
 
     @Override
-    @Transactional
     public Item updateQuantity(Cart cart, Product product, int quantity) {
         return quantityUpdateService.updateQuantity(cart, product, quantity);
     }
 
     @Override
-    @Transactional
     public boolean order(Cart cart) {
         cart.setCartState(CartState.CART_SUBMITTED);
         cartRepository.softDelete(cart);

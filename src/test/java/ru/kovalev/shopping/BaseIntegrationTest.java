@@ -77,10 +77,14 @@ public class BaseIntegrationTest {
     }
 
     protected Product productSomething10() {
+        return createProduct("Something", 10);
+    }
+
+    protected Product createProduct(String name, int stored) {
         var product = new Product();
-        product.setName("Something");
+        product.setName(name);
         product.setDescription("Something product description");
-        product.setStored(10);
+        product.setStored(stored);
         return productRepository.save(product);
     }
 }

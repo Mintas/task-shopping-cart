@@ -1,6 +1,7 @@
 package ru.kovalev.shopping.config;
 
-import org.springframework.boot.validation.MessageInterpolatorFactory;
+import java.util.function.Consumer;
+import org.springframework.boot.autoconfigure.validation.ValidationAutoConfiguration;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,27 +12,21 @@ import ru.kovalev.shopping.validation.ChangeQuantityValueExtractor;
 @Configuration
 public class ValidationConfig {
 
+    /**
+     * @see <a href="https://github.com/spring-projects/spring-boot/pull/29429">Autoconfiguration behaviour is included in Spring Boot 3.0</a>
+     *
+     */
     @Bean
-    public static LocalValidatorFactoryBean defaultValidator(ApplicationContext applicationContext) {
-        var factoryBean = initValidatorWithMessageInterpolator(applicationContext);
-        factoryBean.setConfigurationInitializer(cfg -> {
-            cfg.addValueExtractor(new ChangeQuantityValueExtractor());
-            cfg.addValueExtractor(new CartItemsValueExtractor());
-        });
-        factoryBean.afterPropertiesSet();
+    public LocalValidatorFactoryBean defaultValidator(ApplicationContext applicationContext) {
+        var factoryBean = ValidationAutoConfiguration.defaultValidator(applicationContext);
+        factoryBean.setConfigurationInitializer(configurationInitializer());
         return factoryBean;
     }
 
-    /**
-     * This method replicates original behaviour provided by spring autoconfigure:
-     * <p>
-     * {@link org.springframework.boot.autoconfigure.validation.ValidationAutoConfiguration#defaultValidator(ApplicationContext)}
-     */
-    private static LocalValidatorFactoryBean initValidatorWithMessageInterpolator(
-            ApplicationContext applicationContext) {
-        var factoryBean = new LocalValidatorFactoryBean();
-        var interpolatorFactory = new MessageInterpolatorFactory(applicationContext);
-        factoryBean.setMessageInterpolator(interpolatorFactory.getObject());
-        return factoryBean;
+    private Consumer<javax.validation.Configuration<?>> configurationInitializer() {
+        return cfg -> {
+            cfg.addValueExtractor(new ChangeQuantityValueExtractor());
+            cfg.addValueExtractor(new CartItemsValueExtractor());
+        };
     }
 }
