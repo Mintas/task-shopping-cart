@@ -28,3 +28,8 @@ Ordered by implementation priority
 5. implemet GUI (ReactJS  + node plugin)
 6. split to microservices with common gateway (as resource server) such as:
  BookApplication, CartApplication, UiApplication, OrderManagementApplication, GatewayApplication
+
+### Additional outcomes:
+Filed issues and proposed PRs to openapi-generator:
+1. Bug with RequestBody beanValidation https://github.com/OpenAPITools/openapi-generator/issues/13932
+2. Improvement for custom beanValidation annotations https://github.com/OpenAPITools/openapi-generator/issues/13938
