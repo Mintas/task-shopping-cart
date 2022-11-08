@@ -123,6 +123,7 @@ lombok {
 tasks.named('test') {
 	outputs.dir snippetsDir
 	useJUnitPlatform()
+	jvmArgs += "-Duser.language=en"
 }
 
 tasks.named('asciidoctor') {

@@ -124,7 +124,7 @@ class CartApiControllerTest extends BaseIntegrationTest {
 
         var response =
                 restTemplate.postForEntity(CART_PATH + "item/quantity", request, DefaultProblem.class);
-        assertConstraintVioldation(response, "quantity", "не должно равняться null");
+        assertConstraintVioldation(response, "quantity", "must not be null");
     }
 
     @Test
@@ -135,7 +135,7 @@ class CartApiControllerTest extends BaseIntegrationTest {
 
         var response =
                 restTemplate.postForEntity(CART_PATH + "item/quantity", request, DefaultProblem.class);
-        assertConstraintVioldation(response, "changeItemQuantity.arg0.quantity", NotZero.NOT_ZERO_VIOLATION);
+        assertConstraintVioldation(response, "changeItemQuantity.changeQuantityRequest.quantity", NotZero.NOT_ZERO_VIOLATION);
     }
 
     private void assertConstraintVioldation(ResponseEntity<DefaultProblem> response,
@@ -264,7 +264,7 @@ class CartApiControllerTest extends BaseIntegrationTest {
     void orderCart_throwsOnEmptyCart() {
         var ordered = restTemplate.getForEntity(CART_PATH + "order", DefaultProblem.class);
 
-        assertConstraintVioldation(ordered, "order.arg0.items", "не должно быть пустым");
+        assertConstraintVioldation(ordered, "order.arg0.items", "must not be empty");
     }
 
     private void assertStatus(ResponseEntity<?> response, HttpStatus expected) {
